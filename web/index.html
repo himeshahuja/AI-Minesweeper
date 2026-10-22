@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Minesweeper</title>
+  <style>
+    :root {
+      --bg: #f4f3ef;
+      --surface: #ffffff;
+      --text: #1d1d1f;
+      --muted: #6e6e73;
+      --border: #e2e0da;
+      --hidden: #dcd9d1;
+      --hidden-hi: #e8e5de;
+      --hidden-lo: #c9c5bb;
+      --open: #fbfaf7;
+      --accent: #2f6fed;
+      --flag: #e5484d;
+      --mine-bg: #ffe1e1;
+      --ok: #1f9d55;
+      --n1: #2f6fed; --n2: #1f9d55; --n3: #e5484d; --n4: #6e4ad9;
+      --n5: #b4540d; --n6: #0e8a9a; --n7: #1d1d1f; --n8: #6e6e73;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111214;
+        --surface: #1a1b1f;
+        --text: #ececee;
+        --muted: #9a9aa2;
+        --border: #2a2b31;
+        --hidden: #2c2e35;
+        --hidden-hi: #363944;
+        --hidden-lo: #24262c;
+        --open: #17181c;
+        --accent: #6c9cff;
+        --flag: #ff6b6f;
+        --mine-bg: #3a1d20;
+        --ok: #4ade80;
+        --n1: #6c9cff; --n2: #4ade80; --n3: #ff6b6f; --n4: #b69cff;
+        --n5: #f0a35e; --n6: #4fd1e0; --n7: #ececee; --n8: #9a9aa2;
+        color-scheme: dark;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.45 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      display: flex;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+    main { width: 100%; max-width: 760px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+
+    header { text-align: center; }
+    h1 { margin: 0; font-size: 26px; font-weight: 650; letter-spacing: -0.02em; }
+    .sub { margin: 4px 0 0; color: var(--muted); }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 8px 10px;
+    }
+    .readout {
+      display: flex;
+      gap: 14px;
+      padding: 0 6px;
+      font-variant-numeric: tabular-nums;
+      color: var(--muted);
+    }
+    .readout b { color: var(--text); font-weight: 600; }
+
+    select, button {
+      height: 36px;
+      padding: 0 14px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--surface);
+      color: var(--text);
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    button:hover, select:hover { border-color: var(--muted); }
+    button.primary { background: var(--text); border-color: var(--text); color: var(--bg); }
+    button.primary:hover { opacity: 0.88; }
+    button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+
+    .board-wrap {
+      padding: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);
+    }
+    .board {
+      display: grid;
+      gap: 2px;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .cell {
+      width: var(--cell);
+      height: var(--cell);
+      border: 0;
+      padding: 0;
+      border-radius: calc(var(--cell) * 0.16);
+      background: var(--hidden);
+      box-shadow: inset 0 1px 0 var(--hidden-hi), inset 0 -2px 0 var(--hidden-lo);
+      display: grid;
+      place-items: center;
+      font: 700 calc(var(--cell) * 0.52)/1 Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+      cursor: pointer;
+      transition: background 80ms;
+    }
+    .cell:hover { background: var(--hidden-hi); }
+    .cell.open { background: var(--open); box-shadow: none; cursor: default; }
+    .cell.mine { background: var(--mine-bg); }
+    .cell.n1 { color: var(--n1); } .cell.n2 { color: var(--n2); } .cell.n3 { color: var(--n3); } .cell.n4 { color: var(--n4); }
+    .cell.n5 { color: var(--n5); } .cell.n6 { color: var(--n6); } .cell.n7 { color: var(--n7); } .cell.n8 { color: var(--n8); }
+    .cell svg { width: 58%; height: 58%; display: block; }
+    .cell.ai-hint { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+    .status { min-height: 1.5em; color: var(--muted); text-align: center; }
+    .status.win { color: var(--ok); font-weight: 600; }
+    .status.lose { color: var(--flag); font-weight: 600; }
+
+    .help { color: var(--muted); font-size: 13px; text-align: center; max-width: 520px; }
+    kbd {
+      font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      padding: 2px 5px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--surface);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Minesweeper</h1>
+      <p class="sub">With an AI that only makes moves it can prove are safe.</p>
+    </header>
+
+    <div class="toolbar">
+      <select id="size" aria-label="Board size"></select>
+      <div class="readout" aria-live="polite">
+        <span>Mines <b id="mines-left">0</b></span>
+        <span>Time <b id="time">0</b></span>
+      </div>
+      <button id="ai" class="primary">AI move</button>
+      <button id="auto" aria-pressed="false">Auto-solve</button>
+      <button id="new">New game</button>
+    </div>
+
+    <div class="board-wrap"><div class="board" id="board" role="grid" aria-label="Minefield"></div></div>
+
+    <p class="status" id="status" aria-live="polite">Click any tile to start. The first click is always safe.</p>
+    <p class="help">
+      Click to reveal, right-click or long-press to flag, click a number to clear around it once it's flagged.
+      <kbd>A</kbd> AI move · <kbd>S</kbd> auto-solve · <kbd>N</kbd> new game
+    </p>
+  </main>
+
+  <script>
+    // Board presets from the original game: size cycles 10 → 40, mines scale with it.
+    const PRESETS = [[10, 15], [15, 35], [20, 60], [25, 95], [30, 135], [35, 200], [40, 280]];
+
+    const FLAG_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M7 4h11l-3 4 3 4H7z" fill="var(--flag)"/></svg>';
+    const MINE_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6" fill="currentColor"/><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4M5.3 5.3l2.8 2.8M15.9 15.9l2.8 2.8M5.3 18.7l2.8-2.8M15.9 8.1l2.8-2.8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+
+    const $ = (id) => document.getElementById(id);
+    const boardEl = $('board');
+
+    let n, mineCount, mine, count, open, flag, proven, cells;
+    let first, over, opened, timer, startedAt, autoTimer;
+
+    for (const [i, [size, mines]] of PRESETS.entries()) {
+      $('size').add(new Option(`${size} × ${size} · ${mines} mines`, i));
+    }
+
+    // --- Game state ---------------------------------------------------------
+
+    function newGame() {
+      stopAuto();
+      clearInterval(timer);
+      [n, mineCount] = PRESETS[$('size').value];
+      const total = n * n;
+      mine = new Uint8Array(total);
+      count = new Uint8Array(total);
+      open = new Uint8Array(total);
+      flag = new Uint8Array(total);
+      proven = new Uint8Array(total); // mines the AI has deduced
+      first = true;
+      over = false;
+      opened = 0;
+      $('time').textContent = '0';
+      setStatus('Click any tile to start. The first click is always safe.');
+      buildBoard();
+      render();
+    }
+
+    function neighbors(i) {
+      const r = Math.floor(i / n);
+      const c = i % n;
+      const out = [];
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (!dr && !dc) continue;
+          const rr = r + dr;
+          const cc = c + dc;
+          if (rr >= 0 && rr < n && cc >= 0 && cc < n) out.push(rr * n + cc);
+        }
+      }
+      return out;
+    }
+
+    // Mines are placed after the first click, never on or next to it.
+    function placeMines(safe) {
+      const banned = new Set([safe, ...neighbors(safe)]);
+      const pool = [];
+      for (let i = 0; i < n * n; i++) if (!banned.has(i)) pool.push(i);
+      for (let k = 0; k < mineCount; k++) {
+        const j = k + Math.floor(Math.random() * (pool.length - k));
+        [pool[k], pool[j]] = [pool[j], pool[k]];
+        mine[pool[k]] = 1;
+      }
+      for (let i = 0; i < n * n; i++) count[i] = neighbors(i).filter((j) => mine[j]).length;
+      startedAt = Date.now();
+      timer = setInterval(() => { $('time').textContent = Math.floor((Date.now() - startedAt) / 1000); }, 250);
+    }
+
+    function reveal(i) {
+      if (over || open[i] || flag[i]) return;
+      if (first) { first = false; placeMines(i); }
+      if (mine[i]) { lose(i); return; }
+      const stack = [i];
+      while (stack.length) {
+        const j = stack.pop();
+        if (open[j] || flag[j]) continue;
+        open[j] = 1;
+        opened++;
+        if (count[j] === 0) for (const k of neighbors(j)) if (!open[k]) stack.push(k);
+      }
+      if (opened === n * n - mineCount) win();
+    }
+
+    // Clicking a revealed number whose flags are all placed clears the rest.
+    function chord(i) {
+      const nb = neighbors(i);
+      if (nb.filter((j) => flag[j]).length !== count[i]) return;
+      for (const j of nb) reveal(j);
+    }
+
+    function toggleFlag(i) {
+      if (over || open[i]) return;
+      flag[i] ^= 1;
+      if (!flag[i]) proven[i] = 0;
+    }
+
+    function win() {
+      over = true;
+      clearInterval(timer);
+      stopAuto();
+      for (let i = 0; i < n * n; i++) if (mine[i]) flag[i] = 1;
+      setStatus(`Cleared in ${$('time').textContent}s.`, 'win');
+    }
+
+    function lose(hit) {
+      over = true;
+      clearInterval(timer);
+      stopAuto();
+      lose.hit = hit;
+      setStatus('Boom. New game?', 'lose');
+    }
+
+    // --- AI -------------------------------------------------------------------
+    // Same two rules as the Python version:
+    //  1. A number with exactly that many hidden neighbours: they're all mines.
+    //  2. A number whose proven mines already match it: every other neighbour is safe.
+
+    function aiStep() {
+      if (over) return false;
+      if (first) {
+        setStatus('');
+        reveal(Math.floor(n / 2) * n + Math.floor(n / 2));
+        return true;
+      }
+
+      let progress = false;
+      for (let i = 0; i < n * n; i++) {
+        if (!open[i] || !count[i]) continue;
+        const hidden = neighbors(i).filter((j) => !open[j]);
+        if (hidden.length !== count[i]) continue;
+        for (const j of hidden) {
+          if (!proven[j]) { proven[j] = 1; progress = true; }
+          flag[j] = 1;
+        }
+      }
+      for (let i = 0; i < n * n && !over; i++) {
+        if (!open[i] || !count[i]) continue;
+        const nb = neighbors(i);
+        if (nb.filter((j) => proven[j]).length !== count[i]) continue;
+        for (const j of nb) {
+          if (!open[j] && !proven[j]) {
+            flag[j] = 0;
+            reveal(j);
+            progress = true;
+          }
+        }
+      }
+
+      if (!progress && !over) setStatus('No move is certain from here. Make a guess.');
+      else if (!over) setStatus('');
+      return progress;
+    }
+
+    function stopAuto() {
+      clearInterval(autoTimer);
+      autoTimer = null;
+      $('auto').setAttribute('aria-pressed', 'false');
+    }
+
+    function toggleAuto() {
+      if (autoTimer) { stopAuto(); return; }
+      if (over) return;
+      $('auto').setAttribute('aria-pressed', 'true');
+      autoTimer = setInterval(() => {
+        if (!aiStep()) stopAuto();
+        render();
+      }, 110);
+    }
+
+    // --- Rendering ---------------------------------------------------------------
+
+    function buildBoard() {
+      // Fit the board to both the width and the height of the window.
+      const byWidth = (Math.min(window.innerWidth, 760) - 56) / n;
+      const byHeight = (window.innerHeight - 300) / n;
+      const size = Math.max(14, Math.min(42, Math.floor(Math.min(byWidth, byHeight)) - 2));
+      boardEl.style.setProperty('--cell', `${size}px`);
+      boardEl.style.gridTemplateColumns = `repeat(${n}, var(--cell))`;
+      boardEl.replaceChildren();
+      cells = [];
+      for (let i = 0; i < n * n; i++) {
+        const b = document.createElement('button');
+        b.className = 'cell';
+        b.dataset.i = i;
+        b.setAttribute('role', 'gridcell');
+        boardEl.appendChild(b);
+        cells.push(b);
+      }
+    }
+
+    function render() {
+      let flags = 0;
+      for (let i = 0; i < n * n; i++) {
+        const el = cells[i];
+        let cls = 'cell';
+        let html = '';
+        let label = 'hidden';
+        if (flag[i]) flags++;
+
+        if (over && mine[i] && !flag[i]) {
+          cls += ' open mine';
+          html = MINE_SVG;
+          label = 'mine';
+        } else if (over && flag[i] && !mine[i]) {
+          cls += ' open';
+          html = '<span style="color:var(--flag)">×</span>';
+          label = 'wrong flag';
+        } else if (flag[i]) {
+          html = FLAG_SVG;
+          label = 'flagged';
+        } else if (open[i]) {
+          cls += ' open';
+          if (count[i]) { cls += ` n${count[i]}`; html = count[i]; }
+          label = count[i] ? `${count[i]}` : 'empty';
+        }
+        if (over && i === lose.hit) cls += ' mine';
+
+        if (el.className !== cls) el.className = cls;
+        if (el.dataset.html !== String(html)) { el.innerHTML = html; el.dataset.html = html; }
+        el.setAttribute('aria-label', label);
+      }
+      $('mines-left').textContent = mineCount - flags;
+    }
+
+    function setStatus(text, kind = '') {
+      const el = $('status');
+      el.textContent = text;
+      el.className = `status ${kind}`;
+    }
+
+    // --- Input -----------------------------------------------------------------
+
+    let pressTimer = null;
+    let longPressed = false;
+
+    boardEl.addEventListener('click', (e) => {
+      const el = e.target.closest('.cell');
+      if (!el || longPressed) { longPressed = false; return; }
+      const i = +el.dataset.i;
+      if (open[i]) chord(i); else reveal(i);
+      if (!over) setStatus('');
+      render();
+    });
+
+    boardEl.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      const el = e.target.closest('.cell');
+      if (!el) return;
+      toggleFlag(+el.dataset.i);
+      render();
+    });
+
+    // Long-press to flag on touch screens.
+    boardEl.addEventListener('touchstart', (e) => {
+      const el = e.target.closest('.cell');
+      if (!el) return;
+      longPressed = false;
+      pressTimer = setTimeout(() => {
+        longPressed = true;
+        toggleFlag(+el.dataset.i);
+        render();
+      }, 350);
+    }, { passive: true });
+    for (const evt of ['touchend', 'touchmove', 'touchcancel']) {
+      boardEl.addEventListener(evt, () => clearTimeout(pressTimer), { passive: true });
+    }
+
+    $('ai').addEventListener('click', () => { aiStep(); render(); });
+    $('auto').addEventListener('click', toggleAuto);
+    $('new').addEventListener('click', newGame);
+    $('size').addEventListener('change', newGame);
+
+    window.addEventListener('keydown', (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.target.tagName === 'SELECT') return;
+      const k = e.key.toLowerCase();
+      if (k === 'a') { aiStep(); render(); }
+      else if (k === 's') toggleAuto();
+      else if (k === 'n') newGame();
+    });
+
+    newGame();
+  </script>
+</body>
+</html>

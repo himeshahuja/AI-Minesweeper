@@ -3,7 +3,7 @@
 
 This is a Python implementation of the classic Minesweeper game with an AI assistant to help you play. The game is built using the `pygame` library.
 
-**▶ Play it in your browser:** https://himeshahuja.github.io/AI-Minesweeper/
+**▶ Play it in your browser:** https://himeshahuja.github.io/AI-Minesweeper/ (a web version in [`web/`](web/) with the same AI)
 
 ![Screen Recording 2025-07-14 at 4 52 55 PM](https://github.com/user-attachments/assets/28fe75db-78ba-4445-8045-5a071e4ccc3d)
 
