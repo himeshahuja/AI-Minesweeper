@@ -2,6 +2,13 @@ import pygame
 from settings import *
 import random
 import time
+from functools import lru_cache
+
+
+# Every tile used to load all 15 images from disk; share one copy per size instead.
+@lru_cache(maxsize=None)
+def tile_image(name, tilesize):
+    return pygame.transform.scale(pygame.image.load(os.path.join(dirname, f"Assets/{name}.png")), (tilesize, tilesize))
 
 # "?" unknown
 # "x" mine
@@ -13,14 +20,14 @@ class Tile:
         self.tilenumbers = []
 
         for i in range(1, 9):
-            self.tilenumbers.append(pygame.transform.scale(pygame.image.load(os.path.join(dirname, f"Assets/Tile{i}.png")), (tilesize, tilesize)))
+            self.tilenumbers.append(tile_image(f"Tile{i}", tilesize))
 
-        self.tileempty = pygame.transform.scale(pygame.image.load(os.path.join(dirname, "Assets/TileEmpty.png")), (tilesize, tilesize))
-        self.tileexploded = pygame.transform.scale(pygame.image.load(os.path.join(dirname, "Assets/TileExploded.png")), (tilesize, tilesize))
-        self.tileflag = pygame.transform.scale(pygame.image.load(os.path.join(dirname, "Assets/TileFlag.png")), (tilesize, tilesize))
-        self.tilemine = pygame.transform.scale(pygame.image.load(os.path.join(dirname, "Assets/TileMine.png")), (tilesize, tilesize))
-        self.tilenotmine = pygame.transform.scale(pygame.image.load(os.path.join(dirname, "Assets/TileNotMine.png")), (tilesize, tilesize))
-        self.tileunknown = pygame.transform.scale(pygame.image.load(os.path.join(dirname, "Assets/TileUnknown.png")), (tilesize, tilesize))
+        self.tileempty = tile_image("TileEmpty", tilesize)
+        self.tileexploded = tile_image("TileExploded", tilesize)
+        self.tileflag = tile_image("TileFlag", tilesize)
+        self.tilemine = tile_image("TileMine", tilesize)
+        self.tilenotmine = tile_image("TileNotMine", tilesize)
+        self.tileunknown = tile_image("TileUnknown", tilesize)
 
         self.x, self.y = tilesize * x, tilesize * y
         self.image = image
@@ -55,14 +62,14 @@ class Board:
         self.no_moves = False
 
         for i in range(1, 9):
-            self.tilenumbers.append(pygame.transform.scale(pygame.image.load(os.path.join(dirname, f"Assets/Tile{i}.png")), (tilesize, tilesize)))
+            self.tilenumbers.append(tile_image(f"Tile{i}", tilesize))
 
-        self.tileempty = pygame.transform.scale(pygame.image.load(os.path.join(dirname, "Assets/TileEmpty.png")), (tilesize, tilesize))
-        self.tileexploded = pygame.transform.scale(pygame.image.load(os.path.join(dirname, "Assets/TileExploded.png")), (tilesize, tilesize))
-        self.tileflag = pygame.transform.scale(pygame.image.load(os.path.join(dirname, "Assets/TileFlag.png")), (tilesize, tilesize))
-        self.tilemine = pygame.transform.scale(pygame.image.load(os.path.join(dirname, "Assets/TileMine.png")), (tilesize, tilesize))
-        self.tilenotmine = pygame.transform.scale(pygame.image.load(os.path.join(dirname, "Assets/TileNotMine.png")), (tilesize, tilesize))
-        self.tileunknown = pygame.transform.scale(pygame.image.load(os.path.join(dirname, "Assets/TileUnknown.png")), (tilesize, tilesize))
+        self.tileempty = tile_image("TileEmpty", tilesize)
+        self.tileexploded = tile_image("TileExploded", tilesize)
+        self.tileflag = tile_image("TileFlag", tilesize)
+        self.tilemine = tile_image("TileMine", tilesize)
+        self.tilenotmine = tile_image("TileNotMine", tilesize)
+        self.tileunknown = tile_image("TileUnknown", tilesize)
 
         self.tilesize = tilesize
         self.board_surface = pygame.Surface((WIDTH, HEIGHT))

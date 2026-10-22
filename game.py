@@ -1,9 +1,10 @@
+import asyncio
 import pygame
 from settings import *
 from objects import *
 import sys
 
-def game_loop(rows, cols, mines):
+async def game_loop(rows, cols, mines):
     tilesize = WIDTH // cols
     board = Board(tilesize, rows, cols, mines)
     text_highlight = False
@@ -66,3 +67,4 @@ def game_loop(rows, cols, mines):
 
 
         pygame.display.update()
+        await asyncio.sleep(0)
