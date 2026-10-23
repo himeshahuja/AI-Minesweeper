@@ -164,11 +164,7 @@
 
     <div class="board-wrap"><div class="board" id="board" role="grid" aria-label="Minefield"></div></div>
 
-    <p class="status" id="status" aria-live="polite">Click any tile to start. The first click is always safe.</p>
-    <p class="help">
-      Click to reveal, right-click or long-press to flag, click a number to clear around it once it's flagged.
-      <kbd>A</kbd> AI move · <kbd>S</kbd> auto-solve · <kbd>N</kbd> new game
-    </p>
+    <p class="status" id="status" aria-live="polite"></p>
   </main>
 
   <script>
@@ -204,7 +200,7 @@
       over = false;
       opened = 0;
       $('time').textContent = '0';
-      setStatus('Click any tile to start. The first click is always safe.');
+      setStatus('');
       buildBoard();
       render();
     }
@@ -319,7 +315,7 @@
         }
       }
 
-      if (!progress && !over) setStatus('No move is certain from here. Make a guess.');
+      if (!progress && !over) setStatus('No certain move from here.');
       else if (!over) setStatus('');
       return progress;
     }
